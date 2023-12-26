@@ -3,8 +3,8 @@ package com.example.acousticsoundmonitoring
 import android.Manifest
 import android.annotation.SuppressLint
 import android.annotation.TargetApi
-import android.content.ContextWrapper
 import android.content.pm.PackageManager
+import android.media.AudioRecord
 import android.media.MediaRecorder
 import android.os.Build
 import android.os.Bundle
@@ -16,10 +16,15 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.example.acousticsoundmonitoring.databinding.ActivityMainBinding
+import org.tensorflow.lite.support.audio.TensorAudio
+import org.tensorflow.lite.support.label.Category
+import org.tensorflow.lite.task.audio.classifier.AudioClassifier
+import org.tensorflow.lite.task.audio.classifier.Classifications
 import java.io.File
 import java.io.IOException
 import java.util.Calendar
 import java.util.Date
+import kotlin.concurrent.timerTask
 
 
 class MainActivity : AppCompatActivity() {
@@ -30,22 +35,31 @@ class MainActivity : AppCompatActivity() {
     private var RECORD_AUDIO = 0
 
     private lateinit var handler: Handler
-    private val updateDelay = 1000L
+    private val updateDelay = 250L
+    private var model = "yamnet.tflite"
+    private var probTreshHold: Float = 0.3f
+    private var audioPath: String = ""
+    var audioClassifier: AudioClassifier? = null
+    private var tensorAudio: TensorAudio? = null
+    private var audioRecord: AudioRecord? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        audioClassifier = AudioClassifier.createFromFile(this, model)
 
         binding.buttonStartRecording.setOnClickListener {
             if (ContextCompat.checkSelfPermission(this,
                     Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED && ContextCompat.checkSelfPermission(this,
-                    Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+                    Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED && ContextCompat.checkSelfPermission(this,
+                Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
 
                 val permissions = arrayOf(Manifest.permission.RECORD_AUDIO, Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.READ_EXTERNAL_STORAGE)
                 ActivityCompat.requestPermissions(this, permissions,RECORD_AUDIO)
                 Toast.makeText(this, "ASKING", Toast.LENGTH_SHORT).show()
             } else {
+                tensorAudio = audioClassifier?.createInputTensorAudio()
                 startRecording()
             }
         }
@@ -82,10 +96,18 @@ class MainActivity : AppCompatActivity() {
         val audioDirPath = audioDir.absolutePath
         val currentTime: Date = Calendar.getInstance().time // current time
         val curTimeStr: String = currentTime.toString().replace(" ", "_")
-        val recordingFile = File("$audioDirPath/$curTimeStr.m4a")
+        audioPath = "$audioDirPath/accousticsensor.m4a"
+        val recordingFile = File("$audioDirPath/accousticsensor.m4a")
+        val format: TensorAudio.TensorAudioFormat? = audioClassifier?.requiredTensorAudioFormat
+        audioRecord = audioClassifier?.createAudioRecord()
+        audioRecord?.startRecording()
+        tensorAudio = audioClassifier?.createInputTensorAudio()
+
+
+
 
         try {
-            mediaRecorder = MediaRecorder(applicationContext)
+            mediaRecorder = MediaRecorder()
 
             mediaRecorder?.setAudioSource(MediaRecorder.AudioSource.MIC)
             mediaRecorder?.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
@@ -109,6 +131,22 @@ class MainActivity : AppCompatActivity() {
             e.printStackTrace()
         } catch (e: IOException) {
             e.printStackTrace()
+        }
+
+        timerTask {
+            run(){
+                val output: List<Classifications>? = audioClassifier?.classify(tensorAudio)
+                val finalOutput: MutableList<Category> = ArrayList()
+                if(output != null){
+                    for (classifications in output) {
+                        for (category in classifications.categories) {
+                            if (category.score > 0.3f) {
+                                finalOutput.add(category)
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 
@@ -146,6 +184,8 @@ class MainActivity : AppCompatActivity() {
             Toast.makeText(this, "You are not recording right now!", Toast.LENGTH_SHORT).show()
         }
     }
+
+
 
     private fun updateUI(currentAmplitude: Int) {
         Log.d("AAAA", currentAmplitude.toString())
