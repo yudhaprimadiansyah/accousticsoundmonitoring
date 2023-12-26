@@ -14,7 +14,10 @@
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:sv_speedometerMode="TOP"/>
+        app:sv_speedometerMode="TOP"
+        app:sv_minSpeed="50"
+        app:sv_maxSpeed="15000"
+        app:sv_unit="dB"/>
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -22,7 +25,6 @@
         android:gravity="center"
         android:layout_marginTop="24dp"
         app:layout_constraintTop_toBottomOf="@id/speedView">
-
 
         <Button
             android:id="@+id/button_start_recording"

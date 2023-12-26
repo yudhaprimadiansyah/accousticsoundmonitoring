@@ -9,6 +9,7 @@ import android.media.MediaRecorder
 import android.os.Build
 import android.os.Bundle
 import android.os.Environment
+import android.os.Handler
 import android.util.Log
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -28,7 +29,8 @@ class MainActivity : AppCompatActivity() {
     private var recordingStopped: Boolean = false
     private var RECORD_AUDIO = 0
 
-    private var amplitude: Float = 0F
+    private lateinit var handler: Handler
+    private val updateDelay = 1000L
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -56,17 +58,22 @@ class MainActivity : AppCompatActivity() {
             pauseRecording()
         }
 
-        getAmplitude()
     }
 
-    private fun getAmplitude() {
-        amplitude = if (mediaRecorder != null) {
-            mediaRecorder!!.maxAmplitude.toFloat()
-        } else {
-            0F
+    private val updateAmplitude = object : Runnable {
+        override fun run() {
+            if (mediaRecorder != null) {
+                try {
+                    val currentAmplitude = mediaRecorder!!.maxAmplitude
+                    updateUI(currentAmplitude)
+                    handler.postDelayed(this, updateDelay)
+
+                } catch (e: IllegalStateException) {
+                    Log.d("AAAA", e.message.toString())
+                }
+
+            }
         }
-        Log.d("AAAA", amplitude.toString())
-        binding.speedView.speedTo(amplitude)
     }
 
     private fun startRecording() {
@@ -94,6 +101,9 @@ class MainActivity : AppCompatActivity() {
 
             mediaRecorder!!.start()
             state = true
+            handler = Handler()
+            handler.postDelayed(updateAmplitude, updateDelay)
+
             Toast.makeText(this, "Recording started!", Toast.LENGTH_SHORT).show()
         } catch (e: IllegalStateException) {
             e.printStackTrace()
@@ -135,5 +145,11 @@ class MainActivity : AppCompatActivity() {
         }else{
             Toast.makeText(this, "You are not recording right now!", Toast.LENGTH_SHORT).show()
         }
+    }
+
+    private fun updateUI(currentAmplitude: Int) {
+        Log.d("AAAA", currentAmplitude.toString())
+        binding.speedView.speedTo(currentAmplitude.toFloat())
+        binding.speedView.unit = "dB"
     }
 }
