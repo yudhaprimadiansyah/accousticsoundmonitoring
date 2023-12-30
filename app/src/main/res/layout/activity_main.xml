@@ -49,8 +49,8 @@
 
     <TextView
         android:id="@+id/classificationResult"
-        android:layout_width="234dp"
-        android:layout_height="109dp"
+        android:layout_width="232dp"
+        android:layout_height="241dp"
         android:layout_marginTop="20dp"
         android:text="Klasifikasi Kebisingan"
         android:textAlignment="center"
