@@ -28,6 +28,7 @@ import java.io.IOException
 import java.util.Calendar
 import java.util.Date
 import kotlin.concurrent.timerTask
+import kotlin.math.log10
 
 
 class MainActivity : AppCompatActivity() {
@@ -69,7 +70,7 @@ class MainActivity : AppCompatActivity() {
                 Toast.makeText(this, "ASKING", Toast.LENGTH_SHORT).show()
             } else {
                 tensorAudio = audioClassifier?.createInputTensorAudio()
-                audioRecord = AudioRecord(audioSource, sampleRate, channelConfig, audioFormat, bufferSize)
+                //audioRecord = AudioRecord(audioSource, sampleRate, channelConfig, audioFormat, bufferSize)
                 startRecording()
             }
         }
@@ -86,10 +87,22 @@ class MainActivity : AppCompatActivity() {
 
     private val updateAmplitude = object : Runnable {
         override fun run() {
+            tensorAudio?.load(audioRecord)
+            val output = audioClassifier?.classify(tensorAudio)
+            val filteredModelOutput = output?.get(0)?.categories?.filter {
+                it.score > 0.3f
+            }
+            val outputStr = filteredModelOutput?.sortedBy { -it.score }
+                ?.joinToString(separator = "\n") { "${it.label} -> ${it.score} " }
+
+            if(outputStr != null){
+                Log.d("HasilKlasifikasi", outputStr)
+            }
             if (mediaRecorder != null) {
                 try {
                     val currentAmplitude = mediaRecorder!!.maxAmplitude
-                    updateUI(currentAmplitude)
+                    //val db = (20 * Math.log10((currentAmplitude / 32768).toDouble()))
+                    updateUI(currentAmplitude, outputStr.toString())
                     handler.postDelayed(this, updateDelay)
 
                 } catch (e: IllegalStateException) {
@@ -109,23 +122,9 @@ class MainActivity : AppCompatActivity() {
         audioPath = "$audioDirPath/accousticsensor.m4a"
         val recordingFile = File("$audioDirPath/accousticsensor.m4a")
         val format: TensorAudio.TensorAudioFormat? = audioClassifier?.requiredTensorAudioFormat
-//        audioRecord = audioClassifier?.createAudioRecord()
+        audioRecord = audioClassifier?.createAudioRecord()
         audioRecord?.startRecording()
         tensorAudio = audioClassifier?.createInputTensorAudio()
-
-        GlobalScope.launch {
-            val audioBuffer = ShortArray(bufferSize / 2) // 16-bit audio, 2 bytes per sample
-
-            while (true) {
-                val bytesRead = audioRecord?.read(audioBuffer, 0, audioBuffer.size)
-                if (bytesRead != null) {
-                    if (bytesRead > 0) {
-            //                    processAudioData(audioBuffer)
-                        Log.d("AAAA", audioBuffer.toString())
-                    }
-                }
-            }
-        }
 
         try {
             mediaRecorder = MediaRecorder()
@@ -152,22 +151,6 @@ class MainActivity : AppCompatActivity() {
             e.printStackTrace()
         } catch (e: IOException) {
             e.printStackTrace()
-        }
-
-        timerTask {
-            run(){
-                val output: List<Classifications>? = audioClassifier?.classify(tensorAudio)
-                val finalOutput: MutableList<Category> = ArrayList()
-                if(output != null){
-                    for (classifications in output) {
-                        for (category in classifications.categories) {
-                            if (category.score > 0.3f) {
-                                finalOutput.add(category)
-                            }
-                        }
-                    }
-                }
-            }
         }
     }
 
@@ -197,6 +180,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun stopRecording(){
         if(state){
+            audioRecord?.stop()
             mediaRecorder?.stop()
             mediaRecorder?.release()
             state = false
@@ -206,32 +190,10 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun updateUI(currentAmplitude: Int) {
+    private fun updateUI(currentAmplitude: Int, classificationResult: String) {
         Log.d("AAAA", currentAmplitude.toString())
+        binding.classificationResult.setText(classificationResult)
         binding.speedView.speedTo(currentAmplitude.toFloat())
-        binding.speedView.unit = "dB"
+        binding.speedView.unit = "Amp"
     }
-
-    //    private fun processAudioData(audioBuffer: ShortArray) {
-//        // Di sini Anda dapat memproses data audio sesuai kebutuhan Anda
-//        // Contoh: Kirim data audio ke TensorFlow Interpreter
-//
-//        // Bentuk input tensor sesuai dengan model
-//        val inputTensor = interpreter.getInputTensor(0)
-//        inputTensor.rewind()
-//
-//        for (i in audioBuffer.indices) {
-//            // Normalisasi data audio dan kirim ke model
-//            val normalizedValue = audioBuffer[i].toFloat() / Short.MAX_VALUE
-//            inputTensor.putFloat(normalizedValue)
-//        }
-//
-//        // Eksekusi interpreter
-//        interpreter.run()
-//
-//        // Dapatkan output dari model jika diperlukan
-//        val outputTensor = interpreter.getOutputTensor(0)
-//        val outputValues = FloatArray(outputTensor.shape()[1])
-//        outputTensor.getFloatArray(outputValues)
-//    }
 }

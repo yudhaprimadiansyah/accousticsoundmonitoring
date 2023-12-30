@@ -15,35 +15,47 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:sv_speedometerMode="TOP"
-        app:sv_minSpeed="50"
-        app:sv_maxSpeed="15000"
-        app:sv_unit="dB"/>
+        app:sv_minSpeed="0"
+        app:sv_maxSpeed="100"
+        app:sv_unit="Amp"/>
 
     <LinearLayout
+        android:id="@+id/linearLayout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:gravity="center"
         android:layout_marginTop="24dp"
+        android:gravity="center"
         app:layout_constraintTop_toBottomOf="@id/speedView">
 
         <Button
             android:id="@+id/button_start_recording"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Start"/>
+            android:text="Start" />
 
         <Button
             android:id="@+id/button_pause_recording"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Pause"/>
+            android:text="Pause" />
 
         <Button
             android:id="@+id/button_stop_recording"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Stop"/>
+            android:text="Stop" />
 
     </LinearLayout>
+
+    <TextView
+        android:id="@+id/classificationResult"
+        android:layout_width="234dp"
+        android:layout_height="109dp"
+        android:text="Klasifikasi Kebisingan"
+        android:textSize="20sp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/linearLayout" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
