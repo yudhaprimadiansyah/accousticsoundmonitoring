@@ -39,7 +39,7 @@ class MainActivity : AppCompatActivity() {
     private var RECORD_AUDIO = 0
 
     private lateinit var handler: Handler
-    private val updateDelay = 250L
+    private val updateDelay = 750L
     private var model = "yamnet.tflite"
     private var probTreshHold: Float = 0.3f
     private var audioPath: String = ""
