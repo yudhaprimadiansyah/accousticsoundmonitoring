@@ -15,8 +15,8 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:sv_speedometerMode="TOP"
-        app:sv_minSpeed="50"
-        app:sv_maxSpeed="16000"
+        app:sv_minSpeed="0"
+        app:sv_maxSpeed="150"
         app:sv_unit="Amp"/>
 
     <LinearLayout

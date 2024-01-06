@@ -101,8 +101,8 @@ class MainActivity : AppCompatActivity() {
             if (mediaRecorder != null) {
                 try {
                     val currentAmplitude = mediaRecorder!!.maxAmplitude
-                    //val db = (20 * Math.log10((currentAmplitude / 32768).toDouble()))
-                    updateUI(currentAmplitude, outputStr.toString())
+                    val db = currentAmplitude * (150.0/16000.0)
+                    updateUI(db, outputStr.toString())
                     handler.postDelayed(this, updateDelay)
 
                 } catch (e: IllegalStateException) {
@@ -184,16 +184,19 @@ class MainActivity : AppCompatActivity() {
             mediaRecorder?.stop()
             mediaRecorder?.release()
             state = false
+            binding.classificationResult.setText("(Kondisi Tidak Merekam)")
             Toast.makeText(this, "Recording Finished!", Toast.LENGTH_SHORT).show()
         }else{
             Toast.makeText(this, "You are not recording right now!", Toast.LENGTH_SHORT).show()
         }
     }
 
-    private fun updateUI(currentAmplitude: Int, classificationResult: String) {
+    private fun updateUI(currentAmplitude: Double, classificationResult: String) {
         Log.d("AAAA", currentAmplitude.toString())
-        binding.classificationResult.setText(classificationResult)
+        if(classificationResult != ""){
+            binding.classificationResult.setText(classificationResult)
+        }
         binding.speedView.speedTo(currentAmplitude.toFloat())
-        binding.speedView.unit = "Amp"
+        binding.speedView.unit = "db"
     }
 }
